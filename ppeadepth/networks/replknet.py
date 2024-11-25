@@ -12,7 +12,7 @@ import torch.nn as nn
 from torch import Tensor
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
-from timm.models.layers import DropPath, trunc_normal_
+from timm.layers import DropPath, trunc_normal_
 import sys
 import os
 from typing import Optional
@@ -154,12 +154,11 @@ class RepLKBlock(nn.Module):
         super().__init__()
         self.pw1 = conv_bn_relu(in_channels, dw_channels, 1, 1, 0, groups=1)
         self.pw2 = conv_bn(dw_channels, in_channels, 1, 1, 0, groups=1)
-        self.large_kernel = ReparamLargeKernelConv(in_channels=dw_channels, out_channels=dw_channels, kernel_size=block_lk_size,
-                                                  stride=1, groups=dw_channels, small_kernel=small_kernel, small_kernel_merged=small_kernel_merged)
+        self.large_kernel = ReparamLargeKernelConv(in_channels=dw_channels, out_channels=dw_channels, kernel_size=block_lk_size, stride=1, groups=dw_channels, small_kernel=small_kernel, small_kernel_merged=small_kernel_merged)
         self.lk_nonlinear = nn.ReLU()
         self.prelkb_bn = get_bn(in_channels)
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
-        print('drop path:', self.drop_path)
+        # print('drop path:', self.drop_path)
 
     def forward(self, x):
         out = self.prelkb_bn(x)
@@ -383,7 +382,6 @@ class RepLKNet(nn.Module):
 
 
 def create_RepLKNet31B(drop_path_rate=0.3, num_classes=1000, out_indices=None, use_checkpoint=True, small_kernel_merged=False, pretrained=None, use_sync_bn=True):
-    print("hhhhhhhhh")
     return RepLKNet(large_kernel_sizes=[31,29,27,13], layers=[2,2,18,2], channels=[128,256,512,1024],
                     drop_path_rate=drop_path_rate, small_kernel=5, num_classes=num_classes, out_indices=out_indices, use_checkpoint=use_checkpoint,
                     small_kernel_merged=small_kernel_merged, use_sync_bn=use_sync_bn, pretrained=pretrained)

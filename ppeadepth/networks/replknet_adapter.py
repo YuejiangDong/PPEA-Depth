@@ -12,7 +12,7 @@ import torch.nn as nn
 from torch import Tensor
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
-from timm.models.layers import DropPath, trunc_normal_
+from timm.layers import DropPath, trunc_normal_
 import sys
 import os
 from typing import Optional
@@ -52,7 +52,7 @@ class B_Adapter(nn.Module):
         self.feats = D_features
         D_hidden_features = int(D_features * mlp_ratio)
         self.act = act_layer()
-        print("in B_adapter ", adpt_test)
+        # print("in B_adapter ", adpt_test)
         if adpt_test == 1 or adpt_test == 2:
             self.D_fc1 = nn.Linear(D_features, D_hidden_features)
             self.D_fc2 = nn.Linear(D_hidden_features, D_features)
@@ -300,7 +300,7 @@ class RepLKBlock(nn.Module):
         self.lk_nonlinear = nn.ReLU()
         self.prelkb_bn = get_bn(in_channels)
         self.drop_path = DropPath(drop_path) if drop_path > 0. else nn.Identity()
-        print('drop path:', drop_path)
+        # print('drop path:', drop_path)
         if adpt_test >= 0:
             # self.lk_adapter = B_Adapter(D_features=dw_channels, adpt_test=adpt_test)
             # self.ffn_adapter = D_Adapter(in_features=dw_channels, out_features=in_channels, adpt_test=adpt_test)
@@ -628,7 +628,6 @@ class RepLKNetAdapter(nn.Module):
 
 
 def create_RepLKNet31B_Adapter(drop_path_rate=0.3, num_classes=1000, num_input_images=1, out_indices=(0, 1, 2, 3), use_checkpoint=True, small_kernel_merged=False, pretrained=None, use_sync_bn=True, g_blk=1.0, g_ffn=1.0, ratio=0.25, trans_adpt=False, input_adpt=False, adpt_test=0):
-    print("hhhhhhhhh")
     return RepLKNetAdapter(large_kernel_sizes=[31,29,27,13], layers=[2,2,18,2], channels=[128,256,512,1024],
                     drop_path_rate=drop_path_rate, small_kernel=5, num_classes=num_classes, out_indices=out_indices, use_checkpoint=use_checkpoint,
                     small_kernel_merged=small_kernel_merged, use_sync_bn=use_sync_bn, pretrained=pretrained, g_blk=g_blk, g_ffn=g_ffn, trans_adpt=trans_adpt, input_adpt=input_adpt, adpt_test=adpt_test, ratio=ratio, num_input_images=num_input_images)

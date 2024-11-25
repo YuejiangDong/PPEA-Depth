@@ -19,21 +19,30 @@ Stage 2:
 Please refer to the repositories of [ManyDepth](https://github.com/nianticlabs/manydepth) for dataset preparing. Download [gt depths of CityScapes](https://storage.googleapis.com/niantic-lon-static/research/manydepth/gt_depths_cityscapes.zip), and unzip into folder `./split/cityscapes`.
 
 
-### Environment
+### Environment Requirements
 + python 3.8
 + accelerate == 0.18.0
 + torch == 1.10.0+cu113 torchaudio == 0.10.0+cu113 torchvision == 0.11.1+cu113
 + torch-scatter == 2.0.9 torch-sparse == 0.6.13
 + torchmetrics == 0.11.1
++ wandb
++ einops
++ matplotlib
++ timm
++ Pillow
+
+### Pre-Trained Backbone Preparation
+Our PPEA-Depth is trained based on a upstream vision model [RepLKNet](https://github.com/DingXiaoH/RepLKNet-pytorch?tab=readme-ov-file). Please download the checkpoints of [RepLKNet-31B](https://drive.google.com/file/d/1azQUiCxK9feYVkkrPqwVPBtNsTzDrX7S/view?usp=sharing) and [RepLKNet-31L](https://drive.google.com/file/d/16jcPsPwo5rko7ojWS9k_W-svHX-iFknY/view?usp=sharing). Make a new directory `./pretrained/` under the root directory and put the checkpoints into it.
+
 
 
 ### Training
 ```
 # For Stage 1 on KITTI
-accelerate launch --multi_gpu -m ppeadepth.train --adapter --use_checkpoint --validate_every 3000 --num_epochs 30
+accelerate launch --multi_gpu -m ppeadepth.train --adapter --use_checkpoint --validate_every 3000 --num_epochs 30 --data_path <path/of/KITTI_raw/>
 
 # For Stage 2 on CityScapes
-accelerate launch --multi_gpu -m ppeadepth.train --train_cs --dc --adapter --use_checkpoint --validate_every 1000 --num_workers 5 --learning_rate 1e-5
+accelerate launch --multi_gpu -m ppeadepth.train --train_cs --dc --adapter --use_checkpoint --validate_every 1000 --num_workers 5 --learning_rate 1e-5 --data_path <path/of/CityScapes>
 ```
 
 

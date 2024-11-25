@@ -17,7 +17,7 @@ from torch.utils.data import DataLoader
 
 from .utils import readlines
 from .options import MonodepthOptions
-from manydepth import datasets, networks
+from ppeadepth import datasets, networks
 from .layers import transformation_from_parameters, disp_to_depth
 from tqdm import tqdm
 
@@ -396,7 +396,7 @@ if __name__ == "__main__":
     
     # import numpy as np
     # errs = evaluate(opt, [9, 12, 20, 22, 30])# [9, 12,20,22,26,30,34,41,45,47])
-    gt_path = "./manydepth/gt_depths_val.npz"
+    gt_path = "./ppeadepth/gt_depths_val.npz"
     gt_depths = np.load(gt_path, fix_imports=True, encoding='latin1', allow_pickle=True)["data"]
     
     # errs = evaluate(opt, [], gt_depths)

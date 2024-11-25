@@ -11,8 +11,8 @@ import torch
 import torch.nn as nn
 
 from collections import OrderedDict
-from manydepth.layers import *
-from manydepth.networks import conv_bn_relu
+from ppeadepth.layers import *
+from ppeadepth.networks import conv_bn_relu
 # from layers import *
 # from replknet import conv_bn_relu
 

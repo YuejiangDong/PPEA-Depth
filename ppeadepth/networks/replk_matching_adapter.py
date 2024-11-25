@@ -5,8 +5,8 @@ import torch.utils.checkpoint as checkpoint
 
 import numpy as np
 
-from manydepth.layers import BackprojectDepth, Project3D
-from manydepth.networks import create_RepLKNet31B_Adapter, create_RepLKNet31L_Adapter, create_RepLKNetXL_Adapter
+from ppeadepth.layers import BackprojectDepth, Project3D
+from ppeadepth.networks import create_RepLKNet31B_Adapter, create_RepLKNet31L_Adapter, create_RepLKNetXL_Adapter
 class Adapter(nn.Module):
     def __init__(self, D_features, mlp_ratio=0.25, act_layer=nn.GELU):
         super().__init__()
@@ -43,19 +43,17 @@ class RepLKMatchingAdapter(nn.Module):
         super(RepLKMatchingAdapter, self).__init__()
         
         if rep_size == 'b': 
-            pretrained_path = "RepLKNet-31B_ImageNet-1K_224.pth"
+            pretrained_path = "./pretrained/RepLKNet-31B_ImageNet-1K_224.pth"
             class_name = create_RepLKNet31B_Adapter
             self.num_ch_enc = np.array([128, 256, 512, 1024])
             
         elif rep_size == 'l':
-            pretrained_path = "RepLKNet-31L_ImageNet-22K.pth"
+            pretrained_path = "./pretrained/RepLKNet-31L_ImageNet-22K.pth"
             class_name = create_RepLKNet31L_Adapter
             self.num_ch_enc = np.array([192, 384, 768, 1536]) # Large Model
             
         else: # xl:
-            pretrained_path = "RepLKNet-XL_MegData73M_pretrain.pth"
-            class_name = create_RepLKNetXL_Adapter
-            self.num_ch_enc = np.array([256, 512, 1024, 2048]) # XL Model
+            raise NotImplementedError
         
         # if load_full_model:
             # pretrained_path = None

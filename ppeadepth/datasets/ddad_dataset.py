@@ -52,7 +52,7 @@ class DDADDataset(data.Dataset):
         self.resize_tensor = {}
         self.width = width
         self.height = height
-        self.interp = Image.ANTIALIAS
+        self.interp = Image.LANCZOS
         
         for i in range(self.num_scales):
             s = 2 ** i

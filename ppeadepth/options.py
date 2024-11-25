@@ -340,13 +340,11 @@ class MonodepthOptions:
         self.parser.add_argument("--replk", action="store_true")
         self.parser.add_argument("--mono_replk", action="store_true")
         self.parser.add_argument("--rep_size", type=str, default='b', choices=['b', 'l', 'xl'])
-        self.parser.add_argument("--use_checkpoint", action="store_true")# "../DSformer/RepLKNet-31B_ImageNet-1K_224.pth")
+        self.parser.add_argument("--use_checkpoint", action="store_true")
         self.parser.add_argument("--st", action="store_true")
         self.parser.add_argument("--mono_st", action="store_true")
-        self.parser.add_argument("--swin_path", type=str, default="./swin_base_patch4_window7_224_22k.pth")
         self.parser.add_argument("--st2", action="store_true")
         self.parser.add_argument("--mono_st2", action="store_true")
-        self.parser.add_argument("--swin2_path", type=str, default="../ft4/manydepth2_seg/swinv2_base_patch4_window12_192_22k.pth")
         
         # options for self distill
         self.parser.add_argument("--self_distill", action="store_true")
@@ -407,7 +405,7 @@ class MonodepthOptions:
         self.parser.add_argument('--load_clcb', action='store_true')
         self.parser.add_argument('--saveoff', action='store_true')
         self.parser.add_argument("--validate_from", type=int, default=0) # test id for adapter structure
-        
+        self.parser.add_argument("--pose_cnn", action="store_true") 
         self.parser.add_argument("--save_until", type=int, default=0) # test id for adapter structure
         self.parser.add_argument('--separate_load', action='store_true')
         self.parser.add_argument("--ratio", type=float, default=0.25) # test id for adapter structure

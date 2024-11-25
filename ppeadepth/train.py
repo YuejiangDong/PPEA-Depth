@@ -36,11 +36,9 @@ if __name__ == "__main__":
         os.environ['WANDB_MODE'] = 'online'
     # os.environ['WANDB_MODE'] = 'offline'
     
-    # accelerator = Accelerator()
-    
-    # ddp_kwargs = DistributedDataParallelKwargs(find_unused_parameters=False)
-    # accelerator = Accelerator(kwargs_handlers=[ddp_kwargs])
     accelerator = Accelerator()
     
     trainer = Trainer(opts, accelerator)
     trainer.train()
+
+# accelerate launch --multi_gpu -m ppeadepth.train --adapter --use_checkpoint --validate_every 3000 --num_epochs 30 --data_path /group/40033/public_datasets/3d/kitti/train

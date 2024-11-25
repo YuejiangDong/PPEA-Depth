@@ -11,13 +11,9 @@ from .replknet import create_RepLKNet31B, RepLKNet, create_RepLKNet31L
 from .replknet_adapter import create_RepLKNet31B_Adapter, RepLKNetAdapter, create_RepLKNet31L_Adapter, create_RepLKNetXL_Adapter
 from .depth_decoder_v2 import DepthDecoderV2, Adapter, Adapter_
 from .pose_decoder import PoseDecoder
-from .resnet_encoder import ResnetEncoder, ResnetEncoderDYJ
+from .resnet_encoder import ResnetEncoder
 from .layers import transformation_from_parameters, disp_to_depth
-from .rigid_warp import forward_warp
-from .replknet_pose import RepLKPose
 from .pose_cnn import PoseCNN
-from .pose_vit import PoseViT
-from .pose_rep import PoseRep, PoseRepAdapter
 
 
 class RepDepth(nn.Module):
@@ -65,48 +61,9 @@ class RepDepth(nn.Module):
                                 pass
                             else:
                                 param.requires_grad = False
-                    # elif self.opt.dec_id == 8:
-                    #     if 'adapter' in name:
             if self.opt.dec_only:
                 for name, param in self.encoder.named_parameters():
                     param.requires_grad = False           
-            if self.opt.dc and self.opt.dec_id == 7:
-                # 1/3
-                # disable_id = [0, 1, 3, 5, 7, 12, 13, 15, 16, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 31, 32, 33, 35, 37, 39, 40, 41, 42, 43, 46]# [3, 5, 7, 12, 15, 16, 17, 20, 21, 23, 25, 26, 27, 28, 29, 31, 32, 33, 35, 37, 39, 41, 42, 43]# [0, 7, 16, 19, 20, 21, 23, 24, 25, 26, 27, 29, 30, 31, 32, 33, 35, 37, 39, 40, 41, 43, 45, 47]
-                # 1/2
-                disable_id = [3, 5, 7, 12, 15, 16, 17, 20, 21, 23, 25, 26, 27, 28, 29, 31, 32, 33, 35, 37, 39, 41, 42, 43]
-                # 2/3 
-                # disable_id = [3, 5, 7, 12, 16, 20, 23, 25, 27, 29, 33, 35, 37, 39, 41, 43]
-                
-                blk_cnter = 0
-                # try drop path rate zero
-                for i, layer in enumerate(self.encoder.replk.stages):
-                    for j, blk in enumerate(layer.blocks):
-                        if blk_cnter in disable_id:
-                            # blk.test_id = -1
-                            for name, param in blk.named_parameters():
-                                if 'adapter' in name:
-                                    param.requires_grad = False
-                        blk_cnter += 1
-                        
-                            
-            # if self.opt.dc and self.opt.dec_id == 8:
-            #     enable_id = [2, 3, 6, 7, 26, 27,28,29,30,31,32,33,34,35,36,37,38,39,40,41, 42, 43, 46, 47]
-            #     blk_cnter = 0
-            #     # try drop path rate zero
-            #     for i, layer in enumerate(self.encoder.replk.stages):
-            #         for j, blk in enumerate(layer.blocks):
-            #             if blk_cnter not in enable_id:
-            #                 # blk.test_id = -1
-            #                 for name, param in blk.named_parameters():
-            #                     if 'adapter' in name:
-            #                         param.requires_grad = False
-            #             blk_cnter += 1
-                        
-            #     # if self.opt.adpt_test == 8:
-            #     #     if 'small_conv' in name:
-            #     #         param.requires_grad = True
-        
         
         if self.opt.adapter:
             if self.opt.rep_size == 'b':
@@ -121,18 +78,17 @@ class RepDepth(nn.Module):
             elif self.opt.rep_size == 'l':
                 mono_enc_class = create_RepLKNet31L
             else:
-                mono_enc_class = create_RepLKNetXL
+                raise NotImplementedError
         
         if self.opt.rep_size == 'b':
-            replk_path = "RepLKNet-31B_ImageNet-1K_224.pth"
+            replk_path = "./pretrained/RepLKNet-31B_ImageNet-1K_224.pth"
             num_ch_enc = np.array([128, 256, 512, 1024]) # Base model
             
         elif self.opt.rep_size == 'l':
-            replk_path = "RepLKNet-31L_ImageNet-22K.pth"
+            replk_path = "./pretrained/RepLKNet-31L_ImageNet-22K.pth"
             num_ch_enc = np.array([192, 384, 768, 1536]) # Large Model
         else:
-            replk_path = "RepLKNet-XL_MegData73M_pretrain.pth"
-            num_ch_enc = np.array([256, 512, 1024, 2048]) # XLarge Model
+            raise NotImplementedError
             
         if self.opt.adapter:
             mono_enc_opts = dict(
@@ -182,50 +138,7 @@ class RepDepth(nn.Module):
             if self.opt.dec_only:
                 for name, param in self.mono_encoder.named_parameters():
                     param.requires_grad = False
-            if self.opt.dc and self.opt.dec_id == 7:
-                # 1/3
-                # disable_id = [0, 1, 3, 5, 7, 12, 13, 15, 16, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 31, 32, 33, 35, 37, 39, 40, 41, 42, 43, 46]# [3, 5, 7, 12, 15, 16, 17, 20, 21, 23, 25, 26, 27, 28, 29, 31, 32, 33, 35, 37, 39, 41, 42, 43]# [0, 7, 16, 19, 20, 21, 23, 24, 25, 26, 27, 29, 30, 31, 32, 33, 35, 37, 39, 40, 41, 43, 45, 47]
-                
-                disable_id = [3, 5, 7, 12, 15, 16, 17, 20, 21, 23, 25, 26, 27, 28, 29, 31, 32, 33, 35, 37, 39, 41, 42, 43]
-                # 2/3 
-                # disable_id = [3, 5, 7, 12, 16, 20, 23, 25, 27, 29, 33, 35, 37, 39, 41, 43]
-                
-                blk_cnter = 0
-                # try drop path rate zero
-                for i, layer in enumerate(self.mono_encoder.stages):
-                    for j, blk in enumerate(layer.blocks):
-                        if blk_cnter in disable_id:
-                            # blk.test_id = -1
-                            for name, param in blk.named_parameters():
-                                if 'adapter' in name:
-                                    param.requires_grad = False
-                        blk_cnter += 1
-                        
-                            
-            # if self.opt.dc and self.opt.dec_id == 8:
-            #     enable_id = [2, 3, 6, 7, 26, 27,28,29,30,31,32,33,34,35,36,37,38,39,40,41, 42, 43, 46, 47]
-            #     blk_cnter = 0
-            #     # try drop path rate zero
-            #     for i, layer in enumerate(self.mono_encoder.stages):
-            #         for j, blk in enumerate(layer.blocks):
-            #             if blk_cnter not in enable_id:
-            #                 # blk.test_id = -1
-            #                 for name, param in blk.named_parameters():
-            #                     if 'adapter' in name:
-            #                         param.requires_grad = False
-            #             blk_cnter += 1
             
-            # if self.opt.dc and self.opt.dec_id == 7:
-            #     disable_id = [3, 9, 12, 15, 17, 19, 20, 21, 22, 23, 25, 27, 29, 30, 31, 32, 33, 35, 37, 39, 40, 42, 45, 47]
-            #     blk_cnter = 0
-            #     # try drop path rate zero
-            #     for i, layer in enumerate(self.mono_encoder.stages):
-            #         for j, blk in enumerate(layer.blocks):
-            #             if blk_cnter in disable_id:
-            #                 blk.test_id = -1
-            #                 for name, param in blk.named_parameters():
-            #                     param.requires_grad = False
-            #             blk_cnter += 1
                 
         if self.opt.lps2:
             for name, param in self.encoder.named_parameters():
@@ -236,44 +149,13 @@ class RepDepth(nn.Module):
         # posenet
         self.need_pose_dec = False
         
-        if self.opt.pose_attn_adpt:
-            self.pose_encoder = PoseRepAdapter(3, "res", 0.1)
-        elif self.opt.pose_attn:
-            self.pose_encoder = PoseRep(3, self.opt.rep_size)
-        elif self.opt.pose_vit:
-            self.pose_encoder = PoseViT(self.opt.height, self.opt.width, 3, self.opt.vit_size)
-        elif self.opt.pose_replk:
-            self.pose_encoder = RepLKPose(self.opt.rep_size, False,
-                                        self.opt.trans, self.opt.input, self.opt.adpt_test,
-                                        g_blk=self.opt.g_blk, g_ffn=self.opt.g_ffn)
-            self.need_pose_dec = True
-        
-        elif self.opt.pose_test:
-            self.pose_encoder = ResnetEncoderDYJ(18, self.opt.weights_init == "pretrained",
-                                num_input_images=3)
-        elif self.opt.pose_cnn:
+        if self.opt.pose_cnn:
             self.pose_encoder = PoseCNN(num_input_frames=3)
         else:
             self.pose_encoder = ResnetEncoder(18, self.opt.weights_init == "pretrained",
                                 num_input_images=2)
             self.need_pose_dec = True
-        # if self.opt.adapter:
-        #     if self.opt.pose_attn:
-        #         pass
-        #     elif self.opt.pose_attn_adpt or self.opt.pose_cnn:
-        #         pass
-        #         # for name, param in self.pose_encoder.named_parameters():
-        #         #     if 'replk' not in name:
-        #         #         continue
-        #         #     if 'adpt' not in name and 'adapter' not in name and 'bn' not in name:
-        #         #         param.requires_grad = False
-        #     elif self.need_pose_dec and not self.opt.pose_replk:
-        #         pass
-        #     else:
-        #         for name, param in self.pose_encoder.named_parameters():
-        #             if 'adpt' not in name and 'adapter' not in name and 'bn' not in name and 'temporal_embedding' not in name and 'ln_post' not in name:
-        #                 param.requires_grad = False
-           
+        
         if self.need_pose_dec:
             self.pose = PoseDecoder(self.pose_encoder.num_ch_enc,
                                     num_input_features=1,
@@ -289,35 +171,8 @@ class RepDepth(nn.Module):
         self.freeze_pose = False
         self.dc = self.opt.dc
         
-        if self.opt.perf:
-            disable_id = [7, 20, 21, 23, 24, 25, 27, 29, 31, 33, 35, 37, 39, 41, 43, 47]
-
-            # disable_id = [0, 7, 16, 19, 20, 21, 23, 24, 25, 26, 27, 29, 30, 31, 32, 33, 35, 37, 39, 40, 41, 43, 45, 47]# [0, 7, 16, 19, 20, 21, 23, 24, 25, 26, 27, 29, 30, 31, 32, 33, 35, 37, 39, 40, 41, 43, 45, 47]
-            # [0, 1, 2, 3, 5, 7, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 47]# [3, 9, 12, 15, 17, 19, 20, 21, 22, 23, 25, 27, 29, 30, 31, 32, 33, 35, 37, 39, 40, 42, 45, 47]#[0, 3, 12, 15, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 45, 47]# [0, 1, 3, 11, 12, 13, 14, 15, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 45, 47]
-            blk_cnter = 0
-            # try drop path rate zero
-            for i, layer in enumerate(self.encoder.replk.stages):
-                    for j, blk in enumerate(layer.blocks):
-                        if blk_cnter in disable_id: # != 46 and blk_cnter != 4 and blk_cnter != 5:#in disable_id:
-                            blk.test_id = -1
-                            for name, param in blk.named_parameters():
-                                param.requires_grad = False
-                        blk_cnter += 1
-                        
-            blk_cnter = 0
-            disable_id_mono = [1, 3, 9, 11, 17, 18, 19, 21, 23, 24, 25, 26, 28, 29, 40, 42]
-    
-            for i, layer in enumerate(self.mono_encoder.stages):
-                    for j, blk in enumerate(layer.blocks):
-                        if blk_cnter in disable_id_mono:
-                            blk.test_id = -1
-                            for name, param in blk.named_parameters():
-                                if 'adapter' in name:
-                                    param.requires_grad = False
-                        blk_cnter += 1
-    def dc_ft_init(self, adpt=True):
-        # self.dc = True
         
+    def dc_ft_init(self, adpt=True):
         if adpt==False:
             return
         
@@ -386,16 +241,7 @@ class RepDepth(nn.Module):
                 self.mono_depth.adapters.append(Adapter_(num_ch_enc[3-i],num_ch_enc[2-i]))#,3,2,1))
             self.depth.adapters.append(Adapter_(num_ch_enc[0],num_ch_enc[0]//2))#,3,2,1))
             self.mono_depth.adapters.append(Adapter_(num_ch_enc[0],num_ch_enc[0]//2))#,3,2,1))
-                # elif test_id == 11:
-        #     self.depth.adapters = nn.ModuleList()
-        #     self.mono_depth.adapters = nn.ModuleList()
-        #     for i in range(3):
-        #         self.depth.adapters.append(
-        #             nn.Sequential(nn.Conv2d(self.depth.ch_in_disp[3-i],self.depth.ch_in_disp[2-i],3,2,1),
-        #                             nn.GELU))
-        #         self.mono_depth.adapters.append(
-        #             nn.Sequential(nn.Conv2d(self.depth.ch_in_disp[3-i],self.depth.ch_in_disp[2-i],3,2,1),
-        #                             nn.GELU))
+                
                 
         if self.opt.dec_id < 8:    
             nn.init.constant_(self.depth.deconv_adpt.weight, 0)
@@ -414,39 +260,7 @@ class RepDepth(nn.Module):
         for name, param in self.mono_depth.named_parameters():
             if 'adpt' not in name and 'adapter' not in name:
                 param.requires_grad = False
-        # for name, param in self.encoder.named_parameters():
-        #     if 'adapter' in name:
-        #         if '3.blocks.3' in name or '2.blocks.35' in name or '1.blocks.3' in name or '0.blocks.0' in name:
-        #             pass
-        #             # param.requires_grad = True
-        #         else:
-        #             param.requires_grad = False
-        #     else:
-        #         param.requires_grad = False
-                   
-        # for name, param in self.mono_encoder.named_parameters():
-        #     if 'adapter' in name:
-        #         # if '3.blocks.3' in name or '2.blocks.35' in name or '1.blocks.3' in name or '0.blocks.0' in name:
-        #         pass
-        #             # param.requires_grad = True
-        #         # else:
-        #         #     param.requires_grad = False
-        #     else:
-        #         param.requires_grad = False
         
-        ###### the code with bug
-        # dict_load_depth = self.depth.state_dict().copy()
-        # dict_load_depth_m = self.mono_depth.state_dict().copy()
-        
-        # self.depth = DepthDecoderV2(
-        #     num_ch_enc, self.opt.scales, self.opt.debug, dc=True
-        # )
-        # self.mono_depth = DepthDecoderV2(
-        #     num_ch_enc, self.opt.scales, self.opt.debug, dc=True
-        # )
-        
-        # self.depth.load_state_dict(dict_load_depth, strict=False)
-        # self.mono_depth.load_state_dict(dict_load_depth_m, strict=False)
     
     def cross_load_kitti(self, pretrained_folder='./ckpt/l_dprp3_s72000'):
         whole_model = torch.load(pretrained_folder+'/model.pth', map_location='cpu')
@@ -502,7 +316,7 @@ class RepDepth(nn.Module):
                 blk.drop_path = whole_mono_encoder.stages[i].blocks[j].drop_path
         
         
-    def load_drop_path(self, depthbin_tracker, pretrained_folder='./ckpt/blkc3_s57000'): #'../manydepth2_seg/ckpt/clcbt2_s8000'):
+    def load_drop_path(self, depthbin_tracker, pretrained_folder='./ckpt/blkc3_s57000'): 
         if self.opt.adpt_test == 4:
             pretrained_folder = './ckpt/clcbfte6+_s15000'
         print("debug ", pretrained_folder)
@@ -563,9 +377,9 @@ class RepDepth(nn.Module):
                     
     def load_pretrained(self):
         if self.opt.rep_size == 'b':
-            pretrained_path = "../DSformer/RepLKNet-31B_ImageNet-1K_224.pth"
+            pretrained_path = "./pretrained/RepLKNet-31B_ImageNet-1K_224.pth"
         elif self.opt.rep_size == 'l':
-            pretrained_path = "../DSformer/RepLKNet-31L_ImageNet-22K.pth"
+            pretrained_path = "./pretrained/RepLKNet-31L_ImageNet-22K.pth"
         pretrained_weights = torch.load(pretrained_path, map_location=lambda storage, loc: storage.cpu())
         
         
@@ -648,16 +462,6 @@ class RepDepth(nn.Module):
                 outputs[("cam_T_cam", 0, f_i)] = transformation_from_parameters(
                     axisangle[:, 0], translation[:, 0], invert=(f_i < 0))
                 
-                # if self.dc:
-                #     if f_i < 0:
-                #         # Tt->t-1
-                #         outputs[("cam_T_cam", -1, 0)] = (transformation_from_parameters)(
-                #             axisangle[:, 0], translation[:, 0], invert=False)
-                #     else:
-                #        # Tt->t+1
-                #         outputs[("cam_T_cam", 1, 0)] = (transformation_from_parameters)(
-                #             axisangle[:, 0], translation[:, 0], invert=True) 
-
         # now we need poses for matching - compute without gradients
         to_iter = self.matching_ids # if not self.dc else [0, -1, 1]
         pose_feats = {f_i: inputs["color_aug", f_i, 0] for f_i in to_iter}
@@ -691,12 +495,6 @@ class RepDepth(nn.Module):
                     pose = transformation_from_parameters(
                         axisangle[:, 0], translation[:, 0], invert=False)
                     
-                    # if self.dc:
-                    #     # Tt->t+1
-                    #     pose_inv = (transformation_from_parameters)(
-                    #         axisangle[:, 0], translation[:, 0], invert=True)
-                    
-
                     # now find 0->fi pose
                     if fi != 1:
                         pose = torch.matmul(pose, inputs[('relative_pose', fi - 1)])
@@ -705,12 +503,8 @@ class RepDepth(nn.Module):
                 for batch_idx, feat in enumerate(pose_feats[fi]):
                     if feat.sum() == 0:
                         pose[batch_idx] *= 0
-                        # if self.dc:
-                        #     pose_inc[batch_idx] *= 0
 
                 inputs[('relative_pose', fi)] = pose
-                # if self.dc:
-                #     inputs[('relative_pose_inv', fi)] = pose
                 
         return outputs    
      
@@ -758,50 +552,8 @@ class RepDepth(nn.Module):
         lookup_frames = [inputs[('color_aug', idx, 0)] for idx in self.matching_ids[1:]]
         lookup_frames = torch.stack(lookup_frames, 1)  # batch x frames x 3 x h x w
         
-        # if self.dc:
-        #     # to predict D_{t-1}
-        #     relative_poses_inv = [inputs[('relative_pose_inv', idx)] for idx in self.matching_ids[1:]]
-        #     relative_poses_inv = torch.stack(relative_poses_inv, 1)
-        #     lookup_frames_inv = [inputs[('color_aug', 0, 0)]]
-        #     lookup_frames_inv = torch.stack(lookup_frames_inv, 1)  # batch x frames x 3 x h x w
-            
-        #     # to predict D_{t+1}
-        #     relative_poses_inv_nxt = [inputs[('relative_pose_inv', -1)]]
-        #     relative_poses_inv_nxt = torch.stack(relative_poses_inv_nxt, 1)
-        #     lookup_frames_inv_nxt = [inputs[('color_aug', 0, 0)]]
-        #     lookup_frames_inv_nxt = torch.stack(lookup_frames_inv_nxt, 1)
-            
-
         self.device = inputs[('color_aug', 0, 0)].device
-        # if self.dc:
-        #     batch_size = 3 * len(lookup_frames)
-        #     augmentation_mask = torch.zeros([batch_size, 1, 1, 1]).to(self.device).float()
-
-        #     input_cat = torch.cat([inputs["color_aug", 0, 0], inputs["color_aug", -1, 0], inputs["color_aug", 1, 0]], dim=0)
-        #     lookup_frames_cat = torch.cat([lookup_frames, lookup_frames_inv, lookup_frames_inv_nxt], dim=0)
-        #     r_pose_cat = torch.cat([relative_poses, relative_poses_inv, relative_poses_inv_nxt], dim=0)
-            
-        #     for batch_idx in range(batch_size):
-        #         rand_num = random.random()
-                
-        #         frame_seq = int(batch_idx / len(lookup_frames))
-        #         frame_id = 0 if frame_seq == 0 else -1 if frame_seq == 1 else 1
-                
-        #         # static camera augmentation -> overwrite lookup frames with current frame
-        #         if rand_num < 0.25:
-        #             replace_frames = \
-        #                 [input_cat[batch_idx] for _ in self.matching_ids[1:]]
-        #             replace_frames = torch.stack(replace_frames, 0)
-        #             lookup_frames_cat[batch_idx] = replace_frames
-                    
-        #             augmentation_mask[batch_idx] += 1
-        #         # missing cost volume augmentation -> set all poses to 0, the cost volume will
-        #         # skip these frames
-        #         elif rand_num < 0.5:
-        #             r_pose_cat[batch_idx] *= 0
-        #             augmentation_mask[batch_idx] += 1
         
-        # else:
         batch_size = len(lookup_frames)
         
         augmentation_mask = torch.zeros([batch_size, 1, 1, 1]).to(self.device).float()
@@ -824,21 +576,13 @@ class RepDepth(nn.Module):
     
         outputs['augmentation_mask'] = augmentation_mask
         
-        
-        
         # predict by teacher network
         if self.freeze_tp == False:
-            # if self.dc:
-            #     img_aug = torch.cat([inputs["color_aug", 0, 0], inputs["color_aug", -1, 0], inputs["color_aug", 1, 0]], dim=0)
-            # else:
             img_aug = inputs["color_aug", 0, 0]
             feats = self.mono_encoder(img_aug)
             mono_outputs.update(self.mono_depth(feats))
         else:
             with torch.no_grad():
-                # if self.dc:
-                #     img_aug = torch.cat([inputs["color_aug", 0, 0], inputs["color_aug", -1, 0], inputs["color_aug", 1, 0]], dim=0)
-                # else:
                 img_aug = inputs["color_aug", 0, 0]
                 feats = self.mono_encoder(img_aug)
                 mono_outputs.update(self.mono_depth(feats))
@@ -852,72 +596,10 @@ class RepDepth(nn.Module):
                 _key = tuple(_key)
                 outputs[_key] = mono_outputs[key]
         
-        if self.opt.dyn:
-            ############# warpping image based on teacher model predicted pose and depth ###############
-            with torch.no_grad():
-                _, teacher_depth = disp_to_depth(mono_outputs["disp", 0].detach().clone(), self.opt.min_depth, self.opt.max_depth)  # [12, 1, 192, 512]
-                teacher_depth =teacher_depth.detach().clone()
-                tgt_imgs = inputs["color", 0, 0].detach().clone()  # [12, 3, 192, 512]
-                m1_pose = outputs[("cam_T_cam", 0, -1)][:, :3, :].detach().clone()  # [12, 3, 4]
-                intrins = inputs[('K', 0)][:,:3,:3]  # [12, 3, 3]
-                doj_mask = inputs["doj_mask"]  # [12, 1, 192, 512]
-                tgt_imgs[doj_mask.repeat(1,3,1,1)==0] = 0
-                img_w_m1, _, _ = forward_warp(tgt_imgs, teacher_depth, m1_pose, intrins, upscale=3, rotation_mode='euler', padding_mode='zeros')
-                doj_maskm1 = inputs["doj_mask-1"].repeat(1,3,1,1)  # [12, 3, 192, 512]
-                if self.opt.no_teacher_warp:
-                    inputs['ori_color', -1, 0] = inputs["color", -1, 0].detach().clone()
-                inputs["color", -1, 0][doj_maskm1==1] = 0
-                if not self.opt.no_reproj_doj:
-                    inputs["color", -1, 0][img_w_m1>0] = img_w_m1[img_w_m1>0]
-                else:
-                    inputs["color", -1, 0][img_w_m1>0] = 0
-                inputs["color", -1, 0] = inputs["color", -1, 0].detach().clone()
-
-                non_cv_aug = [augmentation_mask[:,0,0,0]==0][0]  # [12]
-                if non_cv_aug.sum() > 0:
-                    tgt_imgs_aug = inputs["color_aug", 0, 0].detach().clone()  # [12, 3, 192, 512]
-                    tgt_imgs_aug[doj_mask.repeat(1,3,1,1)==0] = 0
-                    imgaug_w_m1, _, _ = forward_warp(tgt_imgs_aug[non_cv_aug], teacher_depth[non_cv_aug], m1_pose[non_cv_aug], intrins[non_cv_aug], upscale=3, rotation_mode='euler', padding_mode='zeros')
-                    warp_frame = lookup_frames[non_cv_aug][:,0,:,:,:].detach().clone()
-                    warp_frame[doj_maskm1[non_cv_aug]==1] = 0
-                    warp_frame[imgaug_w_m1>0] = imgaug_w_m1[imgaug_w_m1>0]
-                    lookup_frames[non_cv_aug] = warp_frame.unsqueeze(1).detach().clone()
-
-                p1_pose = outputs[("cam_T_cam", 0, 1)][:, :3, :].detach().clone()  # [12, 3, 4]
-                img_w_p1, _, _ = forward_warp(tgt_imgs, teacher_depth, p1_pose, intrins, upscale=3, rotation_mode='euler', padding_mode='zeros')
-                doj_maskp1 = inputs["doj_mask+1"].repeat(1,3,1,1)  # [12, 3, 192, 512]
-                if self.opt.no_teacher_warp:
-                    inputs['ori_color', 1, 0] = inputs["color", -1, 0].detach().clone()
-                inputs["color", 1, 0][doj_maskp1==1] = 0
-                if not self.opt.no_reproj_doj:
-                    inputs["color", 1, 0][img_w_p1>0] = img_w_p1[img_w_p1>0]
-                else:
-                    inputs["color", 1, 0][img_w_p1>0] = 0
-                inputs["color", 1, 0] = inputs["color", 1, 0].detach().clone()
-        ####################################################################################################
         
         _, teacher_depth = disp_to_depth(mono_outputs["disp", 0], self.opt.min_depth, self.opt.max_depth)
 
-        # predict by main net using multi frames
-        # if not self.dc:
-            # if self.opt.dyn:
-            #     features, lowest_cost, confidence_mask = self.encoder(
-            #                                         inputs["color_aug", 0, 0],
-            #                                         lookup_frames,
-            #                                         relative_poses,
-            #                                         inputs[('K', 2)],
-            #                                         inputs[('inv_K', 2)],
-            #                                         min_depth_bin=min_depth_bin,
-            #                                         max_depth_bin=max_depth_bin,
-            #                                         teacher_depth=teacher_depth,
-            #                                         doj_mask=inputs["doj_mask"],
-            #                                         cv_min=self.opt.cv_min=='true',
-            #                                         aug_mask=augmentation_mask,
-            #                                         set_1=self.opt.cv_set_1,
-            #                                         pool=self.opt.cv_pool,
-            #                                         pool_r=self.opt.cv_pool_radius,
-            #                                         pool_th=self.opt.cv_pool_th)
-            # else:
+        
         features, lowest_cost, confidence_mask = self.encoder(
                                             inputs["color_aug", 0, 0],
                                             lookup_frames,
@@ -927,19 +609,6 @@ class RepDepth(nn.Module):
                                             min_depth_bin=min_depth_bin,
                                             max_depth_bin=max_depth_bin)
                                             
-        # else:
-        #     K_cat = torch.cat([inputs[('K', 2)], inputs[('K', 2)], inputs[('K', 2)]], dim=0)
-        #     invk_cat = torch.cat([inputs[('inv_K', 2)], inputs[('inv_K', 2)], inputs[('inv_K', 2)]], dim=0)
-            
-        #     features_cat, lowest_cost_cat, confidence_mask_cat = self.encoder(
-        #         input_cat, lookup_frames_cat, r_pose_cat,
-        #         K_cat, invk_cat,
-        #         min_depth_bin=min_depth_bin,
-        #         max_depth_bin=max_depth_bin)
-        #     bs = inputs[('K', 2)].shape[0]
-        #     lowest_cost = lowest_cost_cat[:bs]
-        #     confidence_mask = confidence_mask_cat[:bs]
-        #     features = features_cat
         
         outputs.update(self.depth(features))
         

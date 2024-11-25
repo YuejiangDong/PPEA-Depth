@@ -55,9 +55,6 @@ class DepthBins(Metric):
         min_depth = min_depth.mean()
         max_depth = max_depth.mean()
         
-        # print("update val ", min_depth, max_depth)
-        # print("ori val ", self.min_depth, self.max_depth)
-        
         min_depth = max(self.opt_min_depth, min_depth * 0.9)
         max_depth = max_depth * 1.1
         
@@ -94,7 +91,7 @@ class Trainer:
             self.opt.dataset = 'cityscapes_preprocessed' 
             self.opt.height = 192
             self.opt.width = 512 
-            self.opt.data_path = '../cs'
+            # self.opt.data_path = '../cs'
             self.opt.split = 'cityscapes_preprocessed' 
             self.opt.eval_split = 'cityscapes'
         
@@ -136,7 +133,7 @@ class Trainer:
             if idx not in self.val_frames_to_load:
                 self.val_frames_to_load.append(idx)
         
-        print('Loading frames: {}'.format(frames_to_load))
+        # print('Loading frames: {}'.format(frames_to_load))
 
         # MODEL SETUP
         self.model = networks.RepDepth(self.opt)
@@ -243,7 +240,7 @@ class Trainer:
             self.backproject_depth[scale] = BackprojectDepth(self.opt.batch_size, h, w)
             self.backproject_depth[scale].to(self.device)
             
-            self.project_3d[scale] = Project3D(self.opt.batch_size, h, w) #, dc=self.opt.dc)
+            self.project_3d[scale] = Project3D(self.opt.batch_size, h, w)
             self.project_3d[scale].to(self.device)
 
         self.depth_metric_names = [
@@ -337,12 +334,9 @@ class Trainer:
         """
 
         print("Training")
-        print('Loading frames for val: {}'.format(self.val_frames_to_load))
+        # print('Loading frames for val: {}'.format(self.val_frames_to_load))
         
         self.model.module.train()
-        
-        # if self.opt.dc:
-        # self.set_train()
         
         if self.is_main:
             iterator = tqdm(enumerate(self.train_loader), desc=f"Epoch: {self.epoch + 1}/{self.opt.num_epochs}. Loop: Train", total=len(self.train_loader)) 
@@ -440,9 +434,6 @@ class Trainer:
         
         # single frame path
         with self.acc.autocast():
-            # if self.opt.dc:
-            #     self.generate_images_pred_dc(inputs, mono_outputs)
-            # else:    
             self.generate_images_pred(inputs, mono_outputs)
             
             mono_losses, mono_reproj = self.compute_losses(inputs, mono_outputs, is_multi=False)
@@ -966,20 +957,10 @@ class Trainer:
                 project_out = self.project_3d[source_scale](
                     cam_points, inputs[("K", source_scale)], T)
                 
-                # if self.opt.dc:
-                #     pix_coords, computed_depth = project_out
-                #     outputs[("cp_d", frame_id, scale)] = computed_depth
-                # else:
                 pix_coords = project_out
 
                 outputs[("sample", frame_id, scale)] = pix_coords
                 
-                # if self.opt.dc:
-                #     outputs[("proj_d", frame_id, scale)] = F.grid_sample(
-                #         outputs[("depth", frame_id, scale)],
-                #         outputs[("sample", frame_id, scale)],
-                #         padding_mode="border", align_corners=False)
-
                 outputs[("color", frame_id, scale)] = F.grid_sample(
                     inputs[("color", frame_id, source_scale)],
                     outputs[("sample", frame_id, scale)],
@@ -1066,9 +1047,6 @@ class Trainer:
             else:
                 source_scale = 0
             
-            # if self.opt.dc:
-            #     disp = outputs[("disp", scale)][:self.opt.batch_size]
-            # else:
             disp = outputs[("disp", scale)]
             color = inputs[("color", 0, scale)]
             target = inputs[("color", 0, source_scale)]
@@ -1175,90 +1153,9 @@ class Trainer:
 
             losses["loss/{}".format(scale)] = loss
 
-        # depth consistency 
-        # if self.opt.dc:
-        #     project_depth_diffs = []
-        #     identity_depth_diffs = []
-        #     # TODO
-        #     for fi in self.opt.frame_ids[1:]:
-        #         # d0 = colorize(outputs[("depth", 0, 0)].squeeze().cpu().detach().numpy(), vmin=None, vmax=None)
-        #         # im_d0 = Image.fromarray(d0)
-        #         # im_d0.save('./visout/d0.jpg')
-        #         # print("median of d0 ", outputs[("disp", 0)].flatten(1).median())
-                
-        #         # # d0 = colorize(outputs[("depth", 1, 0)].squeeze().cpu().detach().numpy(), vmin=None, vmax=None)
-        #         # # im_d0 = Image.fromarray(d0)
-        #         # # im_d0.save('./visout/d1.jpg')
-        #         # print("median of d1 ", outputs[("depth", 1, 0)].flatten(1).median())
-        #         # # d0 = colorize(outputs[("depth", -1, 0)].squeeze().cpu().detach().numpy(), vmin=None, vmax=None)
-        #         # # im_d0 = Image.fromarray(d0)
-        #         # # im_d0.save('./visout/d_1.jpg')
-        #         # print("median of d-1 ", outputs[("depth", -1, 0)].flatten(1).median())
-        #         # print("median of prj d-1 ", outputs[("proj_d", -1, 0)].flatten(1).median())
-        #         # print("median of prj d-1 ", outputs[("proj_d", 1, 0)].flatten(1).median())
-                
-        #         # # d0 = colorize(outputs[("proj_d", -1, 0)].squeeze().cpu().detach().numpy(), vmin=None, vmax=None)
-        #         # # im_d0 = Image.fromarray(d0)
-        #         # # im_d0.save('./visout/proj_d_fu1.jpg')
-        #         # # d0 = colorize(outputs[("proj_d", 1, 0)].squeeze().cpu().detach().numpy(), vmin=None, vmax=None)
-        #         # # im_d0 = Image.fromarray(d0)
-        #         # # im_d0.save('./visout/proj_d_1.jpg')
-                
-        #         # exit(0)
-                
-        #         # scaling = outputs[("depth", 0, 0)].flatten(1).median(dim=1, keepdim=True)[0] / outputs[("depth", fi, 0)].flatten(1).median(dim=1, keepdim=True)[0]
-        #         # scaling = scaling.unsqueeze(-1).unsqueeze(-1) 
-        #         pred = outputs[("proj_d", fi, 0)]  # * scaling
-        #         target = outputs[("cp_d", fi, 0)]
-        #         project_depth_diffs.append(self.compute_depth_diff(pred, target))
-                
-        #     # for fi in self.opt.frame_ids[1:]:
-        #         pred = outputs[("depth", fi, 0)] # * scaling
-        #         target = outputs[("cp_d", fi, 0)]
-        #         identity_depth_diffs.append(self.compute_depth_diff(pred, target))
-            
-        #     project_depth_diff = torch.cat(project_depth_diffs, 1)
-        #     project_depth_diff, _ = torch.min(project_depth_diff, dim=1, keepdim=True)
-        #     identity_depth_diff = torch.cat(identity_depth_diffs, 1)
-        #     identity_depth_diff, _ = torch.min(identity_depth_diff, dim=1, keepdim=True)
-
-        #     if not self.opt.disable_automasking:
-        #         # add random numbers to break ties
-        #         identity_depth_diff += torch.randn(
-        #             identity_depth_diff.shape).to(self.device) * 0.00001
-
-        #     # find minimum losses from [reprojection, identity]
-        #     depth_loss_mask = self.compute_loss_masks(project_depth_diff,
-        #                                             identity_depth_diff)
-            
-        #     # all_losses = torch.cat([project_depth_diff, identity_depth_diff], dim=1)
-        #     # # print(all_losses.shape) # B, 2, H, W
-        #     # min_val, idx_ = torch.min(all_losses, dim=1, keepdim=True)
-        #     # # print(idxs.shape) # B, 1, H, W
-        #     # # tar = outputs[("depth", 0, scale)]
-        #     # # thres = torch.median(tar.flatten(1), dim=1, keepdim=True)[0].unsqueeze(-1).unsqueeze(-1)
-        #     # depth_loss_mask *= torch.where(min_val < 0.5, 1, 0)
-            
-        #     dc_loss = project_depth_diff * depth_loss_mask
-        #     dc_loss = self.opt.dc_r * dc_loss.sum() / (depth_loss_mask.sum() + 1e-7)
-                        
-            
-        #     total_loss += dc_loss
-
-        #     losses["loss_dc/{}".format(scale)] = dc_loss
-        # # if self.opt.dc and is_multi:
-        # #     losses["loss_dc/{}".format(scale)] = 0
-        
-            
-    
         
         total_loss /= (self.opt.sclm+1)
-        # if not self.opt.rebalance:
         losses["loss"] = total_loss
-        # else:
-        #     losses["origin_loss"] = total_loss
-        #     total_grad_loss /= self.num_scales
-        #     losses["grad_loss"] = total_grad_loss
         
         return losses, reproj_losses
 

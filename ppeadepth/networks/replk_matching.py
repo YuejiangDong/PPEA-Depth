@@ -5,8 +5,8 @@ import torch.utils.checkpoint as checkpoint
 
 import numpy as np
 
-from manydepth.layers import BackprojectDepth, Project3D
-from manydepth.networks import create_RepLKNet31B, create_RepLKNet31L, create_RepLKNetXL
+from ppeadepth.layers import BackprojectDepth, Project3D
+from ppeadepth.networks import create_RepLKNet31B, create_RepLKNet31L, create_RepLKNetXL
 
 class RepLKMatching(nn.Module):
     """Resnet encoder adapted to include a cost volume after the 2nd block.
@@ -22,19 +22,17 @@ class RepLKMatching(nn.Module):
         super(RepLKMatching, self).__init__()
 
         if rep_size == 'b': 
-            pretrained_path = "../DSformer/RepLKNet-31B_ImageNet-1K_224.pth"
+            pretrained_path = "./pretrained/RepLKNet-31B_ImageNet-1K_224.pth"
             class_name = create_RepLKNet31B
             self.num_ch_enc = np.array([128, 256, 512, 1024])
             
         elif rep_size == 'l':
-            pretrained_path = "../DSformer/RepLKNet-31L_ImageNet-22K.pth"
+            pretrained_path = "./pretrained/RepLKNet-31L_ImageNet-22K.pth"
             class_name = create_RepLKNet31L
             self.num_ch_enc = np.array([192, 384, 768, 1536]) # Large Model
             
         else: # xl:
-            pretrained_path = "RepLKNet-XL_MegData73M_pretrain.pth"
-            class_name = create_RepLKNetXL
-            self.num_ch_enc = np.array([256, 512, 1024, 2048]) # XL Model
+            raise NotImplementedError
         
         self.replk = class_name(
             drop_path_rate=0.3,
@@ -328,7 +326,7 @@ class RepLKMatching(nn.Module):
             raise NotImplementedError
 
 if __name__ == "__main__":
-    model = RepLKMatching('../../../DSformer/RepLKNet-31B_ImageNet-1K_224.pth')
+    model = RepLKMatching('./pretrained/RepLKNet-31B_ImageNet-1K_224.pth')
     model.eval()
     x = torch.rand(2, 3, 192, 640)
     lookimgs = torch.rand(2, 1, 3, 192, 640)
